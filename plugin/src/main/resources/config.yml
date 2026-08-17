@@ -1,0 +1,217 @@
+# ═══════════════════════════════════════════════════════════════
+#   Ударный БПЛА
+#   Сборка в три ступени: детали → корпус → аппарат
+#   После правки: /uav reload
+# ═══════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────── ИМЯ И ВНЕШНИЙ ВИД
+item:
+  material: "COAL_BLOCK"
+  name: "&8&lБПЛА"
+  glow: true
+  lore:
+    - "&7Поставьте на землю и задайте цель."
+    - "&7Скорость: &f30 блоков/сек"
+    - "&cО запуске узнают все на сервере."
+
+model:
+  display-name: "&8БПЛА"       # имя над аппаратом в мире
+  show-name: true
+  material: "COAL_BLOCK"        # из чего сделан корпус
+  y-offset: 0.0
+  smoothing-ticks: 3            # сглаживание движения на клиенте
+
+  # TRIANGLE — корпус собирается из пластин, сужающихся к носу.
+  #            Сверху выглядит сплошным треугольником.
+  # FLAT     — одна приплюснутая плита, повёрнутая на 45 (дешевле по сущностям)
+  # CUSTOM   — своя форма из списка parts ниже
+  shape: "TRIANGLE"
+
+  triangle:
+    slabs: 7                    # из скольких пластин собран клин
+    length: 1.8                 # длина корпуса
+    width: 1.7                  # размах у хвоста
+    nose-width: 0.16            # ширина носа
+    thickness: 0.13             # толщина
+
+  # Своя форма при shape: CUSTOM. Каждая строка — одна пластина.
+  # x/y/z — смещение, sx/sy/sz — размеры, rot — поворот в градусах
+  parts: []
+
+# ───────────────────────────────────────────────────────── ПОЛЁТ
+flight:
+  speed-blocks-per-second: 30.0
+  max-range: 3000
+  max-seconds: 120
+  water-kills: true
+  collision-step: 0.4           # шаг проверки препятствий. Меньше = точнее
+
+  # ── Профиль полёта ────────────────────────────────────────────
+  # Аппарат идёт тремя этапами: набор высоты, крейсер, пикирование.
+  climb-height: 60              # на сколько подняться над точкой запуска и целью
+  cruise-altitude: 0            # 0 = считать от climb-height, иначе жёсткая высота Y
+  vertical-speed: 0.7           # блоков за тик по вертикали
+  climb-forward-factor: 0.35    # насколько медленнее идти вперёд при наборе высоты
+  dive-distance: 40             # с какого расстояния до цели пикировать
+
+  # ── Обход рельефа ─────────────────────────────────────────────
+  # Аппарат смотрит вперёд и поднимается над деревьями, холмами и постройками.
+  terrain-lookahead: 28         # на сколько блоков вперёд смотреть
+  terrain-clearance: 8          # запас высоты над препятствием
+  terrain-scan-step: 2          # шаг сканирования. Больше = дешевле, но грубее
+
+# ───────────────────────────────────────────────────────── ВЗРЫВ
+explosion:
+  power: 6.0                    # 4.0 = один динамит, 6.0 ≈ три
+  break-blocks: true            # ВЫКЛЮЧИТЕ на сервере с постройками
+  set-fire: true                # поджигает при попадании
+  extra-fire-radius: 3          # разброс очагов огня вокруг воронки
+
+# ─────────────────────────────────────────────────── САМ АППАРАТ
+drone:
+  health: 8.0
+  max-per-player: 2
+  cooldown-seconds: 60          # пауза между запусками
+  arrow-instant-kill: true
+  explode-when-shot: false
+
+# ─────────────────────────────────────────────────────── ЗВУК
+# Громкость выше 1.0 увеличивает дальность слышимости.
+# 5.0 означает, что гул слышно примерно за 80 блоков.
+sounds:
+  engine: "ENTITY_BEE_LOOP_AGGRESSIVE"
+  engine-volume: 5.0
+  engine-pitch: 0.55            # низкий тон = рёв мотора
+  engine-interval-ticks: 4
+
+  whistle: "BLOCK_NOTE_BLOCK_FLUTE"
+  whistle-volume: 4.0
+  whistle-pitch: 2.0            # высокий тон = свист
+  whistle-interval-ticks: 14
+
+  launch: "ENTITY_FIREWORK_ROCKET_LAUNCH"
+  launch-volume: 4.0
+  fizzle: "ENTITY_GENERIC_EXTINGUISH_FIRE"
+
+effects:
+  trail-particle: "SMOKE"           # на 1.20.4 и старее пишите SMOKE_NORMAL
+  trail-count: 3
+
+hud:
+  enabled: true
+
+broadcast:
+  on-launch: true               # объявлять запуск всему серверу
+  on-impact: false
+
+# ═══════════════════════════════════════════════════════════════
+#   СБОРКА
+#   @НАЗВАНИЕ означает готовый компонент, а не просто предмет.
+#   Обычный предмет в такой клетке рецепт не соберёт.
+# ═══════════════════════════════════════════════════════════════
+
+# ── Итоговая сборка ────────────────────────────────────────────
+drone-recipe:
+  craftable: true
+  row1: "@HULL, @HULL, @HULL"
+  row2: "@HULL, @WARHEAD, @HULL"
+  row3: "@FAN, @JAMMER, @FAN"
+
+components:
+
+  # ── Снаряд: динамит в центре, порох вокруг ───────────────────
+  WARHEAD:
+    material: "TNT"
+    name: "&c&lСнаряд"
+    amount: 1
+    craftable: true
+    glow: true
+    lore:
+      - "&7Боевая часть аппарата."
+    row1: "GUNPOWDER, GUNPOWDER, GUNPOWDER"
+    row2: "GUNPOWDER, TNT, GUNPOWDER"
+    row3: "GUNPOWDER, GUNPOWDER, GUNPOWDER"
+
+  # ── Вентилятор: ротор с редстоуновой втулкой ─────────────────
+  FAN:
+    material: "IRON_TRAPDOOR"
+    name: "&f&lВентилятор"
+    amount: 2
+    craftable: true
+    lore:
+      - "&7Винтомоторная группа."
+    row1: "AIR, IRON_INGOT, AIR"
+    row2: "IRON_INGOT, REDSTONE_BLOCK, IRON_INGOT"
+    row3: "AIR, IRON_INGOT, AIR"
+
+  # ── Фрагмент корпуса: бетон по центральной полосе ────────────
+  HULL:
+    material: "IRON_BLOCK"
+    name: "&8&lФрагмент корпуса"
+    amount: 1
+    craftable: true
+    lore:
+      - "&7На аппарат нужно пять штук."
+    row1: "IRON_INGOT, BLACK_CONCRETE, IRON_INGOT"
+    row2: "IRON_INGOT, BLACK_CONCRETE, IRON_INGOT"
+    row3: "IRON_INGOT, BLACK_CONCRETE, IRON_INGOT"
+
+  # ── Анти-глушилка: антенна, резонатор, эхо-осколок ───────────
+  JAMMER:
+    material: "LIGHTNING_ROD"
+    name: "&b&lАнти-глушилка"
+    amount: 1
+    craftable: true
+    glow: true
+    lore:
+      - "&7Держит связь под помехами."
+      - "&8Эхо-осколок из Глубокой Тьмы."
+    row1: "COPPER_INGOT, LIGHTNING_ROD, COPPER_INGOT"
+    row2: "REDSTONE, AMETHYST_SHARD, REDSTONE"
+    row3: "COPPER_INGOT, ECHO_SHARD, COPPER_INGOT"
+
+# ──────────────────────────────────────────────── ОГРАНИЧЕНИЯ
+protection:
+  spawn-radius: 80              # нельзя целиться близко к спавну. 0 = выкл
+  worlds-blacklist:
+    - "spawn"
+  no-grief-worlds: []
+
+menu:
+  title: "&8Пульт БПЛА"
+  coords-name: "&a&lЗадать координаты"
+  info-name: "&e&lИнформация"
+  boom-name: "&c&lПодорвать на месте"
+  pickup-name: "&6&lРазобрать"
+  filler: "GRAY_STAINED_GLASS_PANE"
+
+# ─────────────────────────────────────────────── СООБЩЕНИЯ
+messages:
+  broadcast-launch: "&c&l⚠ {name} был запущен из неизвестного места!"
+  broadcast-impact: "&c&l⚠ Зафиксировано попадание!"
+  placed: "&aАппарат установлен. Кликните по нему правой кнопкой."
+  ask-coords: "&eВведите координаты цели: &fX Y Z"
+  ask-coords-hint: "&7Например: &f{x} {y} {z}&7. Отмена — напишите &fотмена"
+  bad-coords: "&cНужно три числа через пробел."
+  bad-height: "&cТакой высоты в этом мире нет."
+  too-far: "&cДо цели {dist} блоков, а дальность {max}."
+  cancelled: "&7Запуск отменён."
+  launched: "&aЦель {x} {y} {z}. Подлётное время ~{sec} сек."
+  hud: "&8✈ &fдо цели &e{dist} &fбл. &7· высота {alt} &7· {phase}"
+  phase-climb: "&eнабор высоты"
+  phase-cruise: "&aмаршрут"
+  phase-dive: "&cпикирование"
+  hit: "&cПопадание: {x} {y} {z}"
+  shot-down: "&cАппарат сбит."
+  you-shot-down: "&aВы сбили БПЛА!"
+  lost-battery: "&cТопливо кончилось, аппарат сдетонировал."
+  lost-range: "&cОбрыв связи — аппарат сдетонировал."
+  already-flying: "&cАппарат уже в воздухе."
+  not-yours: "&cЭто не ваш аппарат."
+  drone-gone: "&cАппарата больше нет."
+  picked-up: "&aАппарат разобран."
+  too-many: "&cУ вас уже {n} аппаратов."
+  cooldown: "&cПерезарядка ещё {sec} сек."
+  spawn-protected: "&cСлишком близко к спавну."
+  no-permission: "&cНет прав."
+  world-blocked: "&cВ этом мире БПЛА запрещены."
